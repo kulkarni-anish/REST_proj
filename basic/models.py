@@ -17,7 +17,7 @@ class Workspace(models.Model):
     type       = models.CharField(max_length=50, choices=options)
 
 class ToDo(models.Model):
-    user        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tasks', on_delete=models.CASCADE)
     name        = models.CharField(max_length=50)
     description = models.TextField(null=True)
     status      = models.BooleanField(default=False)
@@ -25,6 +25,9 @@ class ToDo(models.Model):
     updates     = models.IntegerField(default=0)
     deadline    = models.DateTimeField(default=timezone.now)
     workspace   = models.ForeignKey(Workspace, on_delete=models.PROTECT, default=None)
+
+    def __str__(self):
+        return self.name
 
 
 
@@ -80,7 +83,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     #     return True
 
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)       #post_save is the signal
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)

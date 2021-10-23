@@ -1,15 +1,19 @@
+import json
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from rest_framework import serializers, status
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
-from .models import ToDo, Notes
-from .serializers import RegistrationSerializer, Todoserializer, Notesserializer
+
+from basic.email import send_mail
+from .models import MyUser, ToDo, Notes
+from .serializers import RegistrationSerializer, Todoserializer, Notesserializer, UserSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+
 
 # Create your views here.
 
@@ -67,6 +71,9 @@ class NotesList(generics.ListCreateAPIView):
     queryset = Notes.objects.all()
     serializer_class = Notesserializer
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
 
 class NotesDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Notes.objects.all()
@@ -80,6 +87,13 @@ def registration_view(request):
         data = {}
         if serializer.is_valid():
             user = serializer.save()
+
+            send_mail(html=None,
+                text='Here is your Confirmation',
+                subject='Confirmationtoken',
+                from_email='djangorest3@gmail.com',
+                to_emails=[user.email])
+
             data['response'] = 'successfully registered new user.'
             data['email'] = user.email
             data['username'] = user.username
@@ -88,3 +102,28 @@ def registration_view(request):
         else:
             data = serializer.errors
         return Response(data)
+
+
+# @api_view(['POST'])
+# def registration_view(request,tok):
+#     if request.method == 'POST':
+#         serializer = RegistrationSerializer(data=request.data)
+#         data = {}
+#         email = request.data['email']
+#         if serializer.is_valid():
+#             send_mail(html=None,
+#                 text='Here is your Confirmation',
+#                 subject='Confirmationtoken',
+#                 from_email='djangorest3@gmail.com',
+#                 to_emails=[email])
+
+# @api_view(['GET', ])
+# def confirmation_view(request):
+
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    This viewset automatically provides `list` and `retrieve` actions.
+    """
+    queryset = MyUser.objects.all()
+    serializer_class = UserSerializer

@@ -29,15 +29,33 @@ from django.contrib.auth import authenticate
 #         instance.save()
 #         return instance
 
-class UserSerializer(serializers.Serializer):
-    username        = serializers.CharField(max_length=50)
-    email           = serializers.EmailField(max_length=60)
-    profile_picture = serializers.ImageField()
-    is_admin        = serializers.BooleanField(default = False)
-    is_active       = serializers.BooleanField(default = True)
-    is_staff        = serializers.BooleanField(default = False)
-    is_superuser    = serializers.BooleanField(default = False)
-    date_joined     = serializers.DateTimeField(default=timezone.now)
+class Todoserializer(serializers.ModelSerializer):
+    #workspace = Workspaceserializer()
+    user = serializers.ReadOnlyField(source='user.username')
+    workspace = serializers.ReadOnlyField(source='workspace.type')
+
+    class Meta:
+        model = ToDo
+        fields = '__all__'
+        depth = 1                  ##DEPTH
+
+class UserSerializer(serializers.ModelSerializer):
+    #todos = serializers.PrimaryKeyRelatedField(many=True, queryset=ToDo.objects.all())
+        ##when the above is used ...error- 'MyUser' object has no attribute 'todos'
+        #Reverse relation docs doubts
+    tasks = Todoserializer(read_only=True,many=True) #source='tasks.name' not working
+    class Meta:
+        model = MyUser
+        fields = ['id', 'username', 'email','date_joined','tasks']
+
+    # username        = serializers.CharField(max_length=50)
+    # email           = serializers.EmailField(max_length=60)
+    # profile_picture = serializers.ImageField()
+    # is_admin        = serializers.BooleanField(default = False)
+    # is_active       = serializers.BooleanField(default = True)
+    # is_staff        = serializers.BooleanField(default = False)
+    # is_superuser    = serializers.BooleanField(default = False)
+    # date_joined     = serializers.DateTimeField(default=timezone.now)
 
 
 class Workspaceserializer(serializers.ModelSerializer):
@@ -46,12 +64,6 @@ class Workspaceserializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class Todoserializer(serializers.ModelSerializer):
-    #workspace = Workspaceserializer()
-    class Meta:
-        model = ToDo
-        fields = '__all__'
-        depth = 1                  ##DEPTH
 
 class Notesserializer(WritableNestedModelSerializer,serializers.ModelSerializer):
     workspace = Workspaceserializer()
